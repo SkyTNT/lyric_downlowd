@@ -28,6 +28,9 @@ def process_lyric(lyric):
                         '歌 ：' in line or '歌:' in line or '歌 :' in line or 'Vocal' in line or '歌唱' in line or
                         '曲绘' in line or '曲繪' in line):
             continue
+        # print(line)
+        # 可能出现奇怪的分隔符
+        line = re.sub(r'/|\\|\||,|，', ' ', line)
         # 去除时间标记，括号，英文字母
         line = re.sub(r'\[([0-9]|\.|:)*?\]|(\(.*?\))|(（.*?）)|[A-z]', '', line)
         parses = line.split()
@@ -35,14 +38,15 @@ def process_lyric(lyric):
         if len_parses == 0:
             continue
         # 把句子分解为左边是日语，右边不是日语
-        for i in range(0, len_parses + 1):
-            if i == len_parses:
-                line = (line, '')
-                break
-            if langid.classify(' '.join(parses[i:]))[0] != 'ja':
-                line = (' '.join(parses[0:i]), ' '.join(parses[i:]))
-                break
+        parse_lang = []
+        for p in parses:
+            parse_lang.append(langid.classify(p)[0])
+        pos = len_parses - 1
+        while pos >= 0 and parse_lang[pos] != 'ja':
+            pos -= 1
+        line = (' '.join(parses[0:pos + 1]), ' '.join(parses[pos + 1:]))
         line_list.append(line)
+        # print(line)
     if len(line_list) == 0:
         return ''
 
@@ -54,16 +58,19 @@ def process_lyric(lyric):
             ja_num += 1
         if line[1] != '':
             not_ja_num += 1
+    ja_rate = ja_num / len(line_list)
+    not_ja_rate = not_ja_num / len(line_list)
 
     # 只有一点点日语，可能不是日语歌
-    if ja_num / len(line_list) < 0.1:
+    if ja_rate < 0.3:
         return ''
-    # 如果每个句子尾部为非日语的数目占比大于0.5，很大可能为翻译
-    is_with_trans = not_ja_num / len(line_list) > 0.5
+
     for line in line_list:
-        if line[0] == '':
+        # 可能为单独翻译行
+        if ja_rate < 0.8 and line[0] == '':
             continue
-        if is_with_trans:
+        # 如果每个句子尾部为非日语的数目占比大于0.5，很大可能为同行翻译
+        if not_ja_rate > 0.5:
             result += line[0].strip() + '\n'
         else:
             result += ' '.join(line).strip() + '\n'
@@ -105,6 +112,7 @@ if __name__ == '__main__':
             print(e)
 
     a = NetEase()
+    print(process_lyric(a.song_lyric(26096272)))
     while last_song_list_index < len(args.song_list):
         songs = a.playlist_songlist(args.song_list[last_song_list_index])
         print(f"song list {last_song_list_index}")
