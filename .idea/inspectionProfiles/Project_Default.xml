@@ -1,0 +1,45 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="8">
+            <item index="0" class="java.lang.String" itemvalue="PyQt5" />
+            <item index="1" class="java.lang.String" itemvalue="matplotlib" />
+            <item index="2" class="java.lang.String" itemvalue="tensorboardX" />
+            <item index="3" class="java.lang.String" itemvalue="SIP" />
+            <item index="4" class="java.lang.String" itemvalue="webrtcvad_wheels" />
+            <item index="5" class="java.lang.String" itemvalue="setproctitle" />
+            <item index="6" class="java.lang.String" itemvalue="torch" />
+            <item index="7" class="java.lang.String" itemvalue="scikit-image" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="N802" />
+          <option value="N806" />
+          <option value="N803" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="mainUI.Ui_MainWindow.attention_ax" />
+          <option value="mainUI.Ui_MainWindow.attention_fig" />
+          <option value="mainUI.Ui_MainWindow.mel_ax" />
+          <option value="mainUI.Ui_MainWindow.mel_fig" />
+          <option value="mainUI.Ui_MainWindow.attention_fig_canvas" />
+          <option value="mainUI.Ui_MainWindow.mel_fig_canvas" />
+          <option value="mainUI.Ui_MainWindow.figure" />
+          <option value="mainUI.Ui_MainWindow.fig_canvas" />
+          <option value="bool.sum" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
