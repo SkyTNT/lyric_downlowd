@@ -1,10 +1,19 @@
 import json
+import sys
 
 from api import NetEase
 import langid
 import argparse
 import re
 import os
+import signal
+
+
+def quit_(signum, frame):
+    print("中断")
+    with open(args.save_dir + '/songs.json', 'w', encoding='utf-8') as f:
+        f.write(json.dumps(downloaded_songs))
+    sys.exit()
 
 
 def process_lyric(lyric):
@@ -62,6 +71,9 @@ def process_lyric(lyric):
 
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, quit_)
+    signal.signal(signal.SIGTERM, quit_)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--song-list', nargs='+', type=int, default=[], help="歌单id (一个或多个)")
     parser.add_argument('-d', '--save-dir', type=str, default="out", help="输出路径")
@@ -69,6 +81,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(args)
 
+    downloaded_songs = []
     last_song_list_index = 0
     last_song_index = 0
     num = 0
@@ -84,15 +97,26 @@ if __name__ == '__main__':
                 num = last['num']
         except Exception as e:
             print(e)
+    if os.path.exists(args.save_dir + '/songs.json'):
+        try:
+            with open(args.save_dir + '/songs.json', 'r', encoding='utf-8') as f:
+                downloaded_songs = json.loads(f.read())
+        except Exception as e:
+            print(e)
 
     a = NetEase()
     while last_song_list_index < len(args.song_list):
         songs = a.playlist_songlist(args.song_list[last_song_list_index])
+        print(f"song list {last_song_list_index}")
         while last_song_index < len(songs):
             song_id = songs[last_song_index]['id']
+            if song_id in downloaded_songs:
+                last_song_index += 1
+                continue
+            print(f"song list {last_song_list_index} song {last_song_index} , id: {song_id}")
             lyric = process_lyric(a.song_lyric(song_id))
             if lyric != '':
-                print(f"{last_song_list_index} {last_song_index} , id: {song_id}")
+                downloaded_songs.append(song_id)
                 print('  '.join(lyric.split('\n')))
                 with open(args.save_dir + '/last.json', 'w', encoding='utf-8') as f:
                     f.write(json.dumps(
@@ -101,6 +125,7 @@ if __name__ == '__main__':
                     f.write(lyric)
                 num += 1
             last_song_index += 1
-
         last_song_list_index += 1
         last_song_index = 0
+    with open(args.save_dir + '/songs.json', 'w', encoding='utf-8') as f:
+        f.write(json.dumps(downloaded_songs))
