@@ -31,14 +31,11 @@ def process_lyric(lyric):
     only_ja_num = 0
     only_not_ja_num = 0
     both_num = 0
-    lyric_len = len(lyric)
-    for idx, line in enumerate(lyric):
+    for line in lyric:
         # 转换全角空格
         line = line.replace('\u3000', ' ')
         # 跳过说明
-        if (idx <= 10 or idx >= lyric_len - 10) and re.search(
-                r'(词|詞|曲|唱|歌|唄|译|譯|((V|v)ocal)|(曲(绘|繪))|(合(音|唱)))\s*(:|：)',
-                line) is not None:
+        if re.search(r'(词|詞|曲|唱|歌|唄|译|譯|((V|v)ocal)|(曲(绘|繪))|(合(音|唱)))\s*(:|：)', line) is not None:
             continue
         # 去除时间标记
         line = re.sub(r'\[([0-9]|\.|:)*?]', '', line)
@@ -51,8 +48,14 @@ def process_lyric(lyric):
             line_list.append(('>brk', ''))
         if re.search(r'[A-z]', line) is not None:
             eng_num += 1
-        # 去除括号文字，英文字母及特殊字符
-        line = re.sub(r'(\(.*?\))|(（.*?）)|[!-/]|[:-~]', '', line)
+        # 去除括号文字,有嵌套括号情况
+        new_line = re.sub(r'(\([^()（）]*?\))|(（[^()（）]*?）)', '', line)
+        while new_line != line:
+            line = new_line
+            new_line = re.sub(r'(\([^()（）]*?\))|(（[^()（）]*?）)', '', line)
+        line = new_line
+        # 去除英文字母及特殊字符
+        line = re.sub(r'[!-/]|[:-~]', '', line)
 
         parses = line.split()
         len_parses = len(parses)
@@ -97,6 +100,8 @@ def process_lyric(lyric):
     only_not_ja_rate = only_not_ja_num / (len(line_list) - break_num)
     both_rate = both_num / (len(line_list) - break_num)
 
+    # print(f"ja {ja_rate}, not_ja {not_ja_rate}, zh {zh_rate}, on_ja {only_ja_rate}, on_nja {only_not_ja_rate}, both {both_rate}")
+
     if ja_rate < 0.3:
         return ''
 
@@ -113,12 +118,14 @@ def process_lyric(lyric):
             continue
         else:
             need_break = True
-
-        if only_ja_rate > 0.7:
+        # 纯日语
+        if only_ja_rate > 0.6 and only_not_ja_rate < 0.3 and both_rate < 0.3:
             result += ' '.join(line).strip() + '\n'
+        # 同行翻译
         elif both_rate > 0.8 and zh_rate > 0.8:
             result += line[0].strip() + '\n'
-        elif 0.6 > only_ja_rate > 0.4 and abs(only_not_ja_rate - only_ja_rate) < 0.1 and 0.56 > zh_rate > 0.45:
+        # 换行翻译
+        elif only_ja_rate > 0.4 and abs(only_not_ja_rate - only_ja_rate) < 0.1 and 0.56 > zh_rate > 0.45:
             result += ' '.join(line).strip() + '\n'
     return result.strip()
 
@@ -158,8 +165,8 @@ if __name__ == '__main__':
             print(e)
 
     a = NetEase()
-    # print(process_lyric(a.song_lyric(644688)))
-    # 28707396 26124515 26219552 28545793 860337 27672105 644688
+    # print(process_lyric(a.song_lyric(39324197)))
+    # 28707396 26124515 26219552 28545793 860337 27672105 644688 39324197
     while last_song_list_index < len(args.song_list):
         songs = a.playlist_songlist(args.song_list[last_song_list_index])
         print(f"song list {last_song_list_index}")
