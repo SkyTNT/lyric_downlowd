@@ -12,30 +12,39 @@ import signal
 
 def quit_(signum, frame):
     print("中断")
-    with open(args.save_dir + '/songs.json', 'w', encoding='utf-8') as f:
-        f.write(json.dumps(downloaded_songs))
+    try:
+        with open(args.save_dir + '/songs.json', 'w', encoding='utf-8') as f:
+            f.write(json.dumps(downloaded_songs))
+    except Exception as e:
+        print(e)
     sys.exit()
 
 
 def process_lyric(lyric):
     result = ''
     line_list = []
-    line_list_lang = []
     break_num = 0
     eng_num = 0
+    zh_num = 0
+    ja_num = 0
+    not_ja_num = 0
+    only_ja_num = 0
+    only_not_ja_num = 0
+    both_num = 0
     lyric_len = len(lyric)
     for idx, line in enumerate(lyric):
         # 转换全角空格
         line = line.replace('\u3000', ' ')
         # 跳过说明
         if (idx <= 10 or idx >= lyric_len - 10) and re.search(
-                r'(((作|歌|曲)(词|詞))|((作|编|編|原|歌)曲)|((演|歌)唱)|((V|v)ocal)|(曲(绘|繪))|(翻(译|譯))|(合音)|歌|唄)\s*(:|：)',
+                r'(词|詞|曲|唱|歌|唄|译|譯|((V|v)ocal)|(曲(绘|繪))|(合(音|唱)))\s*(:|：)',
                 line) is not None:
             continue
         # 去除时间标记
-        line = re.sub(r'\[([0-9]|\.|:)*?\]', '', line)
+        line = re.sub(r'\[([0-9]|\.|:)*?]', '', line)
+        # print(line)
         # 可能出现奇怪的分隔符
-        line = re.sub(r'/|\\|\||,|，|【|】|\[|\]|-|——', ' ', line)
+        line = re.sub(r'/|\\|\||,|，|【|】|『|』|〖|〗|<|>|\[|]|-|―|—', ' ', line)
         # 分段
         if line == '':
             break_num += 1
@@ -58,36 +67,27 @@ def process_lyric(lyric):
             pos += 1
         line = (' '.join(parses[0:pos]), ' '.join(parses[pos:]))
         line_list.append(line)
-        line_list_lang.append(langid.classify(line[1])[0])
+        # 统计
+        if line[0] != '>brk':
+            if langid.classify(line[1])[0] == 'zh':
+                zh_num += 1
+            if line[0] != '':
+                ja_num += 1
+                if line[1] == '':
+                    only_ja_num += 1
+            if line[1] != '':
+                not_ja_num += 1
+                if line[0] == '':
+                    only_not_ja_num += 1
+            if line[0] != '' and line[1] != '':
+                both_num += 1
+        # print(line)
 
     if (len(line_list) - break_num) == 0:
         return ''
     # 排除日英混合
     if eng_num / (len(line_list) - break_num) >= 0.3:
         return ''
-    # 统计
-    ja_num = 0
-    not_ja_num = 0
-    zh_num = 0
-    only_ja_num = 0
-    only_not_ja_num = 0
-    both_num = 0
-    for line in line_list:
-        if line[0] == '>brk':
-            continue
-        if line[0] != '':
-            ja_num += 1
-            if line[1] == '':
-                only_ja_num += 1
-        if line[1] != '':
-            not_ja_num += 1
-            if line[0] == '':
-                only_not_ja_num += 1
-        if line[0] != '' and line[1] != '':
-            both_num += 1
-    for la in line_list_lang:
-        if la == 'zh':
-            zh_num += 1
 
     ja_rate = ja_num / (len(line_list) - break_num)
     not_ja_rate = not_ja_num / (len(line_list) - break_num)
@@ -158,8 +158,8 @@ if __name__ == '__main__':
             print(e)
 
     a = NetEase()
-    # print(process_lyric(a.song_lyric(28707396)))
-    # # 28707396 26124515 26219552 28545793 860337 27672105
+    # print(process_lyric(a.song_lyric(644688)))
+    # 28707396 26124515 26219552 28545793 860337 27672105 644688
     while last_song_list_index < len(args.song_list):
         songs = a.playlist_songlist(args.song_list[last_song_list_index])
         print(f"song list {last_song_list_index}")
