@@ -138,6 +138,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--song-list', nargs='+', type=int, default=[], help="歌单id (一个或多个)")
     parser.add_argument('-w', '--word', nargs='+', type=str, default=[""], help="歌单关键字(一个或多个)")
     parser.add_argument('-m', '--max-song-list-num', type=int, default=100, help="歌单最大数量")
+    parser.add_argument('-n', '--max-song-num', type=int, default=1000, help="歌词最大数量")
     parser.add_argument('-d', '--save-dir', type=str, default="out", help="输出路径")
     parser.add_argument('-v', '--show', action='store_true', help="打印过程")
     parser.add_argument('-c', '--ctn', action='store_true', help="继续上次")
@@ -201,10 +202,10 @@ if __name__ == '__main__':
         except Exception as e:
             print(e)
 
-    while last_song_list_index < len(args.song_list):
+    while last_song_list_index < len(args.song_list) and num < args.max_song_num:
         songs = a.playlist_songlist(args.song_list[last_song_list_index])
         print(f"song list {last_song_list_index}")
-        while last_song_index < len(songs):
+        while last_song_index < len(songs) and num < args.max_song_num:
             song_id = songs[last_song_index]['id']
             if song_id in downloaded_songs:
                 last_song_index += 1
@@ -218,7 +219,7 @@ if __name__ == '__main__':
                     print('  '.join(lyric.split('\n')))
                 with open(args.save_dir + '/last.json', 'w', encoding='utf-8') as f:
                     f.write(json.dumps(
-                        {'song_list': args.song_list, 'lid': last_song_list_index, 'sid': last_song_index, 'num': num}))
+                        {'song_list': args.song_list, 'lid': last_song_list_index, 'sid': last_song_index, 'num': num+1}))
                 with open(args.save_dir + f'/{num:08d}.txt', 'w', encoding='utf-8') as f:
                     f.write(lyric)
                 num += 1
