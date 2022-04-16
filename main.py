@@ -136,10 +136,37 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--song-list', nargs='+', type=int, default=[], help="歌单id (一个或多个)")
+    parser.add_argument('-w', '--word', type=str, default="", help="歌单关键字")
+    parser.add_argument('-m', '--max-song-list-num', type=int, default=50, help="歌单最大数量")
     parser.add_argument('-d', '--save-dir', type=str, default="out", help="输出路径")
+    parser.add_argument('-v', '--show', action='store_true', help="打印过程")
     parser.add_argument('-c', '--ctn', action='store_true', help="继续上次")
     args = parser.parse_args()
     print(args)
+
+    a = NetEase()
+    # print(process_lyric(a.song_lyric(39324197)))
+    # 28707396 26124515 26219552 28545793 860337 27672105 644688 39324197
+
+    if args.word != '' and not args.ctn:
+        list_dict = {}
+        off = 0
+        has_more = True
+        while has_more:
+            try:
+                search_result = a.search(args.word, stype=1000, offset=off, limit=50)
+                has_more = search_result['hasMore']
+                off += 50
+                for li in search_result['playlists']:
+                    if len(list_dict) >= args.max_song_list_num:
+                        has_more = False
+                        break
+                    list_dict[li['id']] = li['name']
+                    print(li['name'])
+            except Exception as e:
+                print(e)
+                has_more = False
+            args.song_list = [x for x in list_dict.keys()]
 
     downloaded_songs = []
     last_song_list_index = 0
@@ -164,9 +191,6 @@ if __name__ == '__main__':
         except Exception as e:
             print(e)
 
-    a = NetEase()
-    # print(process_lyric(a.song_lyric(39324197)))
-    # 28707396 26124515 26219552 28545793 860337 27672105 644688 39324197
     while last_song_list_index < len(args.song_list):
         songs = a.playlist_songlist(args.song_list[last_song_list_index])
         print(f"song list {last_song_list_index}")
@@ -175,11 +199,13 @@ if __name__ == '__main__':
             if song_id in downloaded_songs:
                 last_song_index += 1
                 continue
-            print(f"song list {last_song_list_index} song {last_song_index} , id: {song_id}")
+            if args.show:
+                print(f"song list {last_song_list_index} song {last_song_index} , id: {song_id}")
             lyric = process_lyric(a.song_lyric(song_id))
             if lyric != '':
                 downloaded_songs.append(song_id)
-                print('  '.join(lyric.split('\n')))
+                if args.show:
+                    print('  '.join(lyric.split('\n')))
                 with open(args.save_dir + '/last.json', 'w', encoding='utf-8') as f:
                     f.write(json.dumps(
                         {'song_list': args.song_list, 'lid': last_song_list_index, 'sid': last_song_index, 'num': num}))
