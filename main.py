@@ -130,6 +130,36 @@ def process_lyric(lyric):
     return result.strip()
 
 
+def get_song_lists(words: list):
+    list_dict = {}
+    off = 0
+    has_more = [True] * len(words)
+    while any(has_more):
+        try:
+            playlists = []
+            for i in range(0, len(words)):
+                if not has_more[i]:
+                    playlists.append([])
+                    continue
+                search_result = a.search(words[i], stype=1000, offset=off, limit=50)
+                has_more[i] = search_result['hasMore']
+                playlists.append(search_result['playlists'])
+            off += 50
+            for i in range(0, 50):
+                for li in playlists:
+                    if i >= len(li):
+                        continue
+                    sli = li[i]
+                    list_dict[sli['id']] = sli['name']
+                    print(sli['name'])
+                    if len(list_dict) >= args.max_song_list_num:
+                        return list_dict
+        except Exception as e:
+            print(e)
+            return list_dict
+    return list_dict
+
+
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, quit_)
     signal.signal(signal.SIGTERM, quit_)
@@ -150,35 +180,8 @@ if __name__ == '__main__':
     # 28707396 26124515 26219552 28545793 860337 27672105 644688 39324197
 
     if not args.ctn:
-        list_dict = {}
-        off = 0
-        has_more = [True] * len(args.word)
-        while any(has_more):
-            try:
-                playlists = []
-                for i in range(0, len(args.word)):
-                    if not has_more[i]:
-                        playlists.append([])
-                        continue
-                    search_result = a.search(args.word[i], stype=1000, offset=off, limit=50)
-                    has_more[i] = search_result['hasMore']
-                    playlists.append(search_result['playlists'])
-                off += 50
-                for i in range(0, 50):
-                    for li in playlists:
-                        if len(list_dict) >= args.max_song_list_num:
-                            has_more = [False]
-                            break
-                        if i >= len(li):
-                            continue
-                        sli = li[i]
-                        list_dict[sli['id']] = sli['name']
-                        print(sli['name'])
-            except Exception as e:
-                print(e)
-                has_more = [False]
-            args.song_list += [x for x in list_dict.keys()]
-
+        ld = get_song_lists(args.word)
+        args.song_list += [x for x in ld.keys()]
     downloaded_songs = []
     last_song_list_index = 0
     last_song_index = 0
