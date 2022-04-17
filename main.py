@@ -108,7 +108,7 @@ def process_lyric(lyric):
     need_break = False
     for line in line_list:
         # 跳过非纯日语下的无日语行
-        if only_ja_rate <= 0.7 and line[0] == '':
+        if only_ja_rate <= 0.6 and line[0] == '':
             continue
         # 分段
         if line[0] == '>brk':
