@@ -182,7 +182,10 @@ if __name__ == '__main__':
     if not args.ctn:
         ld = get_song_lists(args.word)
         args.song_list += [x for x in ld.keys()]
+    print(f"共{len(args.song_list)}个歌单")
+
     downloaded_songs = []
+    loaded_songs = []
     last_song_list_index = 0
     last_song_index = 0
     num = 0
@@ -210,9 +213,10 @@ if __name__ == '__main__':
         print(f"song list {last_song_list_index}")
         while last_song_index < len(songs) and num < args.max_song_num:
             song_id = songs[last_song_index]['id']
-            if song_id in downloaded_songs:
+            if song_id in loaded_songs:
                 last_song_index += 1
                 continue
+            loaded_songs.append(song_id)
             if args.show:
                 print(f"song list {last_song_list_index} song {last_song_index} , id: {song_id}")
             lyric = process_lyric(a.song_lyric(song_id))
