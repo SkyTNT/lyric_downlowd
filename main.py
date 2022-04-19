@@ -130,7 +130,7 @@ def process_lyric(lyric):
     return result.strip()
 
 
-def get_song_lists(words: list):
+def get_song_lists_by_words(words: list):
     list_dict = {}
     off = 0
     has_more = [True] * len(words)
@@ -141,6 +141,7 @@ def get_song_lists(words: list):
                 if not has_more[i]:
                     playlists.append([])
                     continue
+                time.sleep(1)
                 search_result = a.search(words[i], stype=1000, offset=off, limit=50)
                 has_more[i] = search_result['hasMore']
                 playlists.append(search_result['playlists'])
@@ -160,13 +161,45 @@ def get_song_lists(words: list):
     return list_dict
 
 
+def get_song_lists_by_tag(cate, tags: list):
+    list_dict = {}
+    off = 0
+    has_more = True
+    while has_more:
+        try:
+            time.sleep(2)
+            result = a.top_playlists(cate, offset=off, limit=50)
+            off += 50
+            has_more = result['more']
+            play_lists = result['playlists']
+            for li in play_lists:
+                has_tag = False
+                rtag = li['tags']
+                if "说唱" in rtag or "电子" in rtag:
+                    continue
+                for tag in tags:
+                    if tag in rtag:
+                        has_tag = True
+                        break
+                if has_tag:
+                    print(li['name'])
+                    list_dict[li['id']] = li['name']
+                if len(list_dict) >= args.max_song_list_num:
+                    return list_dict
+        except Exception as e:
+            print(e)
+            return list_dict
+    return list_dict
+
+
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, quit_)
     signal.signal(signal.SIGTERM, quit_)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--song-list', nargs='+', type=int, default=[], help="歌单id (一个或多个)")
-    parser.add_argument('-w', '--word', nargs='+', type=str, default=[""], help="歌单关键字(一个或多个)")
+    parser.add_argument('-w', '--word', nargs='+', type=str, default=[], help="歌单关键字(一个或多个)")
+    parser.add_argument('-t', '--tags', nargs='+', type=str, default=[], help="歌单tag(一个或多个)")
     parser.add_argument('-m', '--max-song-list-num', type=int, default=100, help="歌单最大数量")
     parser.add_argument('-n', '--max-song-num', type=int, default=1000, help="歌词最大数量")
     parser.add_argument('-d', '--save-dir', type=str, default="out", help="输出路径")
@@ -180,8 +213,15 @@ if __name__ == '__main__':
     # 28707396 26124515 26219552 28545793 860337 27672105 644688 39324197
 
     if not args.ctn:
-        ld = get_song_lists(args.word)
-        args.song_list += [x for x in ld.keys()]
+        if len(args.word) != 0:
+            ld = get_song_lists_by_words(args.word)
+            args.song_list += [x for x in ld.keys() if x not in args.song_list]
+        if len(args.tags) != 0:
+            ld = get_song_lists_by_tag("日语", args.tags)
+            args.song_list += [x for x in ld.keys() if x not in args.song_list]
+            ld = get_song_lists_by_tag("ACG", args.tags)
+            args.song_list += [x for x in ld.keys() if x not in args.song_list]
+
     print(f"共{len(args.song_list)}个歌单")
 
     downloaded_songs = []

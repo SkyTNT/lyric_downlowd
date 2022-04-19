@@ -483,7 +483,7 @@ class NetEase(object):
         params = dict(
             cat=category, order=order, offset=offset, total="true", limit=limit
         )
-        return self.request("POST", path, params).get("playlists", [])
+        return self.request("POST", path, params)
 
     def playlist_catelogs(self):
         path = "/weapi/playlist/catalogue"
