@@ -260,7 +260,7 @@ if __name__ == '__main__':
             if args.show:
                 print(f"song list {last_song_list_index} song {last_song_index} , id: {song_id}")
             lyric = process_lyric(a.song_lyric(song_id))
-            if lyric != '':
+            if lyric != '' and lyric.count('\n') > 6:
                 downloaded_songs.append(song_id)
                 if args.show:
                     print('  '.join(lyric.split('\n')))
